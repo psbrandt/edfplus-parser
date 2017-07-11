@@ -1,0 +1,21 @@
+{
+  "name": "edfplus-parser",
+  "version": "0.0.1",
+  "description": "Edfplus parser",
+  "main": "src/index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://bitbucket.org/yehezkel/edfplus-parser.git"
+  },
+  "keywords": [
+    "edf",
+    "edfplus",
+    "parser"
+  ],
+  "author": "Yehezkel (Amed) Reyes",
+  "email": "areyes@nerd.com",
+  "license": "ISC"
+}
