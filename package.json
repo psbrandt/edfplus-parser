@@ -17,5 +17,16 @@
   ],
   "author": "Yehezkel (Amed) Reyes",
   "email": "areyes@nerd.com",
-  "license": "ISC"
+  "license": "ISC",
+  "devDependencies": {
+    "mocha": "^3.5.0",
+    "nyc": "^11.1.0"
+  },
+  "scripts": {
+    "test": "mocha tests/ --recursive",
+    "test-coverage": "nyc --reporter=text mocha tests/ --recursive"
+  },
+  "nyc": {
+    "exclude": "tests"
+  }
 }
