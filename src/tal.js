@@ -5,17 +5,18 @@ const InvalidOnSetPrefix         = new Error('Missing onset sign prefix')
 const InvalidTal                 = new Error('Invalid Tal')
 
 /*Time and duration separator ASCII 21*/
-const TIME_SEP = '\x15'
+const TIME_SEP = 21
 /*Annotation separator ASCII 20*/
-const ANN_SEP = '\x14'
+const ANN_SEP = 20
 /*Annotation en*/
 const ANN_ENCODING = 'utf8'
 /*End of tal mark ASCII 0*/
-const EOT     = '\x00'
+const EOT     = '\x00'.charCodeAt(0)
+
 
 /*Internal TAL parsing states*/
-const STATE_START = 0
-const STATE_ONSET = 1
+const MINUS_SIGN = 45
+const PLUS_SIGN  = 43
 
 
 
@@ -38,7 +39,9 @@ var TalContainer = class {
     }
 
     AddAnnotation(msg){
-        this.ann.push(msg)
+        this.ann.push(
+            msg.toString(ANN_ENCODING)
+        )
         return this
     }
 }
@@ -103,7 +106,7 @@ function TalDecoder(source, container){
     var current = 0
     const length = source.length
 
-    while( current == EOT && current < length){
+    while( source[current] == EOT && current < length){
         current++
     }
 
@@ -113,11 +116,12 @@ function TalDecoder(source, container){
 
     //onset
     const sign = source[ current++ ]
-    if(sign != '-' && sign != '+'){
+    if(sign != MINUS_SIGN && sign != PLUS_SIGN){
         throw InvalidOnSetPrefix
     }
 
     var next = nextToken(source, current)
+
     if(false == next || source[next] == EOT){
         throw InvalidTal
     }
@@ -130,7 +134,7 @@ function TalDecoder(source, container){
         throw InvalidTal
     }
 
-    if(sign == '-'){
+    if(sign == MINUS_SIGN){
         offset *= -1
     }
     current = next
@@ -138,8 +142,9 @@ function TalDecoder(source, container){
     //duration
     var duration = null
     if(source[current++] == TIME_SEP){
+
         next = nextToken(source, current)
-        if(false == next || source[next] == ANN_SEP){
+        if(false == next || source[next] != ANN_SEP){
             throw InvalidTal
         }
 
@@ -147,7 +152,7 @@ function TalDecoder(source, container){
             source.toString('ascii',current, next)
         )
 
-        if(isNaN(offset)){
+        if(isNaN(duration)){
             throw InvalidTal
         }
 
@@ -158,7 +163,11 @@ function TalDecoder(source, container){
     container.Duration(duration)
 
     //annotations
-    while( ANN_SEP == (next = nextToken(source, current)) ){
+    while (next = nextToken(source, current)){
+
+        if (source[next] != ANN_SEP){
+            break
+        }
 
         container.AddAnnotation(
             source.slice(current, next)
@@ -180,9 +189,10 @@ function nextToken(source, start){
 
     var pos = start
     const len = source.length
-    while(pos < start.length){
+    while(pos < len){
 
         const at = source[pos]
+
         if(
             TIME_SEP == at ||
             ANN_SEP  == at ||

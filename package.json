@@ -4,7 +4,8 @@
   "description": "Edfplus parser",
   "main": "src/index.js",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "mocha tests/ --recursive",
+    "test-coverage": "nyc --reporter=text mocha tests/ --recursive"
   },
   "repository": {
     "type": "git",
@@ -21,10 +22,6 @@
   "devDependencies": {
     "mocha": "^3.5.0",
     "nyc": "^11.1.0"
-  },
-  "scripts": {
-    "test": "mocha tests/ --recursive",
-    "test-coverage": "nyc --reporter=text mocha tests/ --recursive"
   },
   "nyc": {
     "exclude": "tests"

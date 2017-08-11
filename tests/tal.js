@@ -81,6 +81,14 @@ describe("MultiTalContainer", function(){
     })
 
 
+    it("Not container provided", function(){
+
+        assert.throws(() => {
+            return new tal.MultiTalContainer({})
+        }, Error, 'Invalid container implementation class')
+    })
+
+
     it("Single Tal", function(){
         const ctner = new tal.MultiTalContainer(
             tal.TalContainer
@@ -96,13 +104,75 @@ describe("MultiTalContainer", function(){
 
         const list = ctner.Tals()
 
+
         assert.equal(list.length, 1,"Single tal")
         assert((list[0] instanceof tal.TalContainer), true,"Correnct instance")
+        var expected = new tal.TalContainer()
 
-        const t = list[0]
-
-        assert.equal(t.offset, offset)
-        assert.equal(t.duration, duration)
-        assert.deepStrictEqual(t.ann, [msg])
+        assert.deepStrictEqual(
+            expected.OnSet(offset).Duration(duration).AddAnnotation(msg),
+            list[0],
+            "Equal tal"
+        )
     })
+})
+
+
+describe("Tal Decoder",function(){
+
+    var tests = [
+        {input: "+660\x15300\x14Sleep stage N1\x14\x00", length:25, offset: 660.0, duration: 300.0, annotations: ["Sleep stage N1"]},
+        {input: "+0\x14\x14Recording starts\x14\x00", length:22, offset: 0.0, duration: null, annotations: ["","Recording starts"]},
+        {input: "+1019.4\x150.8\x14Limb movement\x14R leg\x14\x00", length:33, offset: 1019.4, duration: 0.8, annotations: ["Limb movement","R leg"]},
+        {input: "-302102\x14Recording ends\x14\x00\x00\x00\x00\x00", length:24, offset: -302102, duration: null, annotations: ["Recording ends"]}
+    ]
+
+    tests.forEach(function(test, index){
+        it("Tal decoder test " + test.input, function(){
+            var container = new tal.TalContainer()
+            const used = tal.TalDecoder(Buffer.from(test.input), container)
+
+            assert.equal(used, test.length,"Parsed amount of bytes")
+            assert.equal(container.offset, test.offset,"Tal offset")
+            assert.equal(container.duration, test.duration,"Tal duration")
+            assert.deepStrictEqual(container.ann, test.annotations,"Tal annotations")
+        })
+    })
+
+
+    it("Only 0s", function(){
+
+        var container = new tal.MultiTalContainer(tal.TalContainer)
+        const input  = Buffer.from("\x00\x00\x00\x00\x00\x00")
+
+        const used = tal.TalDecoder(input, container)
+        assert.equal(used,6)
+        assert.equal(0,container.Tals().length)
+    })
+
+    var bad_tals = [
+        {input: "*660\x15300\x14Sleep stage N1\x14\x00", error: "Missing onset sign prefix"},
+        {input: "+660", error: "Invalid Tal"},
+        {input: "+660\x00", error: "Invalid Tal"},
+        {input: "+abc\x15", error: "Invalid Tal"},
+        {input: "+123\x15\x00", error: "Invalid Tal"},
+        {input: "+123\x15abc\x14", error: "Invalid Tal"},
+        {input: "+123\x15123\x14", error: "Invalid Tal"},
+        {input: "+123\x15123", error: "Invalid Tal"},
+    ]
+
+    bad_tals.forEach(function(test, index){
+        it("Bad Tal decoder test " + test.input, function(){
+
+            assert.throws(
+                () => {
+                    tal.TalDecoder(Buffer.from(test.input), new tal.TalContainer())
+                },
+                Error, test.error
+            )
+
+        })
+    })
+
+
 })
