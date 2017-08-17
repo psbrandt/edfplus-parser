@@ -1,62 +1,117 @@
 'use strict'
 
-const {RecordProcessor:EdfRecordProcessor} = require('edf-parser')
+const {RecordProcessor: EdfRecordProcessor} = require('edf-parser')
 const {IsProcessor: IsAnnProcessor} = require('./annotations.js')
 
-const InvalidSignalAfterAnnotation = new Error("")
-const MissingAnnotation = new Error("")
+const InvalidSignalAfterAnnotation = new Error('Invalid signal after first annotation')
+const MissingAnnotation = new Error('No edf annotation found')
+const IncompleteRecord = new Error('Incomplete data record')
+const NoRecord = new Error('No record has been read')
+const OutofRange = new Error('Signal index out of range')
 
-var RecordProcessor = class{
+var RecordProcessor = class {
+  constructor (startTime, duration, processors) {
+        // regular signal processors
+    var rsignals = []
+        // annotation processors
+    var annotations = []
+    var first = false
 
-    constructor(startTime, duration, processors){
+    for (let p of processors) {
+      if (IsAnnProcessor(p)) {
+        annotations.push(p)
+        first = true
+        continue
+      }
 
-        //regular signal processors
-        var rsignals = []
-        //annotation processors
-        var annotations = []
-        var first = false
+      if (first) {
+        throw InvalidSignalAfterAnnotation
+      }
 
-        for (let p of processors){
+      rsignals.push(p)
+    }
+        // edf+ must have at least one Edf Annotations signal
+    if (!annotations.length) {
+      throw MissingAnnotation
+    }
 
-            if (IsAnnProcessor(p)){
-                annotations.push(p)
-                first = true
-                continue
-            }
-
-            if(first){
-                throw InvalidSignalAfterAnnotation
-            }
-
-            rsignals.push(p)
-        }
-
-        if (!annotations.length){
-            throw MissingAnnotation
-        }
-
-        this.edf = new EdfRecordProcessor(
-            startTime,duration, rsignals
+    this.edf = new EdfRecordProcessor(
+            startTime, duration, rsignals
         )
 
-        this.annotations = annotations
-        this.rsignals    = rsignals
-        this.start = startTime
-    }
+    this.annotations = annotations
+    this.rsignals = rsignals
+    this.start = startTime
+    this.duration = duration
+    this.count = 0
+  }
 
-    Process(chunk){
+  Process (chunk) {
+    var used = this.edf.Process(chunk)
+    var ann = this.annotations
+    var length = ann.length
 
-        var current = this.edf.Process(chunk)
-        var ann = this.annotations
-        var length = ann.length
-
-        for(let i = 0; i < length; i++){
-
-            current += annotations[i].Process(
-                chunk.slice(current)
+    for (let i = 0; i < length; i++) {
+      used += ann[i].Process(
+                chunk.slice(used)
             )
 
-            if(current > length)
-        }
+      if (used > length) {
+        throw IncompleteRecord
+      }
     }
+
+    this.count++
+    return used
+  }
+
+  StartTime () {
+    if (this.count === 0) {
+      throw NoRecord
+    }
+
+    const first = this.annotations[0]
+
+        // to be change to interface
+    const tals = first.Tals()
+    const offset = tals[0].offset
+
+    return new Date(
+            this.start.getTime() + 1000 * offset
+        )
+  }
+
+  Get (index) {
+    if (this.count === 0) {
+      throw NoRecord
+    }
+
+    const rcount = this.rsignals.length
+    const acount = this.annotations.length
+
+    if (index < 0 || index >= (rcount + acount)) {
+      throw OutofRange
+    }
+
+    if (index < rcount) {
+      return this.edf.Get(index)
+    }
+
+    return this.annotations[index - rcount].Tals()
+  }
+
+  GetAll () {
+    var all = this.edf.GetAll()
+        // override start time
+    all.start = this.StartTime()
+
+        // append annotations
+    all.annotations = this.annotations.map(ann => ann.Tals())
+
+    return all
+  }
+}
+
+module.exports = {
+  RecordProcessor
 }

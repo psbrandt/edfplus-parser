@@ -8,76 +8,65 @@ const DEFAULT_DMAX = 32767
 const DEFAULT_DMIN = -32768
 
 var AnnotationProcessor = class {
-
-    construct(header){
-
-        if(!IsValidHeader(header)){
-            throw InvalidHeader
-        }
-
-        this.header = header
-        this.container = null
+  construct (header) {
+    if (!IsValidHeader(header)) {
+      throw InvalidHeader
     }
 
+    this.header = header
+    this.container = null
+  }
 
-    Process(chunk){
+  Process (chunk) {
+    const toProcess = this.Samples() * 2
+    var container = new tals.MultiTalContainer()
 
-        const toProcess = this.Samples() * 2
-        var container = new tals.MultiTalContainer()
+    if (chunk.length < toProcess) {
+      throw IncompleteSignalData
+    }
 
-        if (chunk.length < toProcess) {
-          throw IncompleteSignalData
-        }
+    this.container = container
+    var total = 0
 
-        this.container = container
-        var total  = 0
-
-        while(total < toProcess){
-
-            let decoded = tals.TalDecode(
+    while (total < toProcess) {
+      let decoded = tals.TalDecode(
                 chunk.slice(total), container
             )
 
-            total += decoded
-        }
-
-        return total
+      total += decoded
     }
 
-    Tals(){
-        if(null === this.container){
-            return []
-        }
+    return total
+  }
 
-        return this.container.Tals()
+  Tals () {
+    if (this.container === null) {
+      return []
     }
 
-
+    return this.container.Tals()
+  }
 }
 
-function IsProcessor(){
-    return (
-        obj.OnSet && (obj.Process instanceof Function) &&
-        obj.Duration && (obj.Tals instanceof Function)
+function IsProcessor (obj) {
+  return (
+        obj.Process && (obj.Process instanceof Function) &&
+        obj.Tals && (obj.Tals instanceof Function)
   )
 }
 
-
-function IsValidHeader(header){
-
-    return (
-        ANNOTATION_LABEL == header.Label &&
+function IsValidHeader (header) {
+  return (
+        ANNOTATION_LABEL === header.Label &&
         header.Samples > 0 &&
-        header.DigitalMax == DEFAULT_DMAX &&
-        header.DigitalMin == DEFAULT_DMIN &&
-        header.PhysicalMax != header.PhysicalMin
-    )
+        header.DigitalMax === DEFAULT_DMAX &&
+        header.DigitalMin === DEFAULT_DMIN &&
+        header.PhysicalMax !== header.PhysicalMin
+  )
 }
 
 module.exports = {
-    AnnotationProcessor,
-    IsProcessor,
-    IsValidHeader
+  AnnotationProcessor,
+  IsProcessor,
+  IsValidHeader
 }
-
-
