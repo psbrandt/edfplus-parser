@@ -20,7 +20,7 @@
   "email": "areyes@nerd.com",
   "license": "ISC",
   "dependencies": {
-    "edf-parser": "~0.2.2"
+    "edf-parser": "^0.2.3"
   },
   "devDependencies": {
     "mocha": "^3.5.0",
