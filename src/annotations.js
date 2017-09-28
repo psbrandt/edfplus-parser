@@ -1,6 +1,6 @@
 'use strict'
 
-const tals = require('./tals.js')
+const tals = require('./tal.js')
 const InvalidHeader = new Error('Invalid Annotation signal header')
 const IncompleteSignalData = new Error('Signal data incomplete')
 const ANNOTATION_LABEL = 'EDF Annotations'
@@ -8,7 +8,8 @@ const DEFAULT_DMAX = 32767
 const DEFAULT_DMIN = -32768
 
 var AnnotationProcessor = class {
-  construct (header) {
+  constructor (header) {
+
     if (!IsValidHeader(header)) {
       throw InvalidHeader
     }
@@ -18,8 +19,11 @@ var AnnotationProcessor = class {
   }
 
   Process (chunk) {
-    const toProcess = this.Samples() * 2
-    var container = new tals.MultiTalContainer()
+
+    const toProcess = this.header.Samples * 2
+    var container = new tals.MultiTalContainer(
+      tals.TalContainer
+    )
 
     if (chunk.length < toProcess) {
       throw IncompleteSignalData
@@ -29,7 +33,7 @@ var AnnotationProcessor = class {
     var total = 0
 
     while (total < toProcess) {
-      let decoded = tals.TalDecode(
+      let decoded = tals.TalDecoder(
                 chunk.slice(total), container
             )
 
@@ -68,5 +72,6 @@ function IsValidHeader (header) {
 module.exports = {
   AnnotationProcessor,
   IsProcessor,
-  IsValidHeader
+  IsValidHeader,
+  ANNOTATION_LABEL
 }

@@ -114,12 +114,15 @@ function parse_patient_subfields (raw, spaceEnc) {
     throw MissingPatientSubfields
   }
 
-  const birthdate = subfields[2]
+  var birthdate = subfields[2]
+  if(null !== birthdate){
+    birthdate = subfield_date(subfields[2])
+  }
 
   var out = {
     code: subfields[0],
     sex: subfields[1],
-    birthdate: (birthdate !== null) ? subfield_date(subfields[2]) : null,
+    birthdate: birthdate,
     name: subfields[3]
   }
 
@@ -140,8 +143,13 @@ function parse_recording_subfields (raw, spaceEnc) {
     throw MissingRecordSubfields
   }
 
+  var date = subfields[1]
+  if (null !== date){
+    date = subfield_date(date)
+  }
+
   var out = {
-    Startdate: subfield_date(subfields[1]),
+    Startdate: date,
     Hospital: subfields[2],
     Resposible: subfields[3],
     Equipment: subfields[4]

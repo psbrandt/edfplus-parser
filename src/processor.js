@@ -49,14 +49,14 @@ var RecordProcessor = class {
   Process (chunk) {
     var used = this.edf.Process(chunk)
     var ann = this.annotations
-    var length = ann.length
 
-    for (let i = 0; i < length; i++) {
+    for (let i = 0; i < ann.length; i++) {
+
       used += ann[i].Process(
                 chunk.slice(used)
-            )
+      )
 
-      if (used > length) {
+      if (used > chunk.length) {
         throw IncompleteRecord
       }
     }
