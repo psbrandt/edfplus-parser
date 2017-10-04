@@ -1,7 +1,7 @@
 'use strict'
 
 const assert = require('assert')
-const tal = require('../src/tal.js')
+const {tal} = require('../src/index.js')
 
 describe('TalContainerDefinition', function () {
   it('IsTalContainer', function () {

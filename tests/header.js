@@ -1,5 +1,6 @@
 const assert = require('assert')
-const {ParseEdfPlusHeader} = require('../src/headers.js')
+// const {ParseEdfPlusHeader} = require('../src/headers.js')
+const {ParseEdfPlusHeader} = require('../src/index.js').utils
 
 describe('ParseEdfHeader', function () {
   it('Throw exception on invalid buffer', function () {
