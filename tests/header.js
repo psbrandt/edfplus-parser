@@ -1,8 +1,7 @@
 const assert = require('assert')
-// const {ParseEdfPlusHeader} = require('../src/headers.js')
-const {ParseEdfPlusHeader} = require('../src/index.js').utils
+const {ParseEdfPlusHeader,ParseFromEdfHeader} = require('../src/index.js').utils
 
-describe('ParseEdfHeader', function () {
+describe('ParseEdfPlusHeader', function () {
   it('Throw exception on invalid buffer', function () {
     const raw = '0       X X X X'
     var header = {}
@@ -101,3 +100,51 @@ describe('ParseEdfHeader', function () {
     assert.deepStrictEqual(expected_header, header, 'Successfully parsed')
   })
 })
+
+describe('ParseFromEdfHeader', function(){
+  it("Regular header",function(){
+
+    const edf_header = {
+      Version: 0,
+      Patient: 'X X X X',
+      Id: 'Startdate 12-AUG-2009 X X BCI2000',
+      Start: new Date('2009-08-12T20:15:00.000Z'),
+      HeaderLength: 16896,
+      Reserved: 'EDF+C',
+      DataRecords: 61,
+      Duration: '1',
+      Signals: 65
+    }
+
+    const expected_header = {
+      Version: 0,
+      Patient: 'X X X X',
+      Id: 'Startdate 12-AUG-2009 X X BCI2000',
+      PatientId: {
+        birthdate: null,
+        code: null,
+        name: null,
+        sex: null
+      },
+      Recording: {
+        Equipment: 'BCI2000',
+        Hospital: null,
+        Resposible: null,
+        Startdate: new Date('2009-08-12T04:00:00.000Z')
+      },
+      Start: new Date('2009-08-12T20:15:00.000Z'),
+      HeaderLength: 16896,
+      Reserved: 'EDF+C',
+      DataRecords: 61,
+      Duration: '1',
+      Signals: 65
+    }
+
+    ParseFromEdfHeader(edf_header)
+    assert.deepStrictEqual(expected_header,edf_header,"Successfully edf header upgrade")
+
+  })
+})
+
+
+

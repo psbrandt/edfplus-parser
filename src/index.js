@@ -1,7 +1,7 @@
 'use strict'
 const {DataBlocks, RecordsStream} = require('edf-parser')
 const utils = require('./utils.js')
-const {ParseEdfPlusHeader} = require('./headers.js')
+const {ParseEdfPlusHeader,ParseFromEdfHeader} = require('./headers.js')
 const {RecordProcessor} = require('./processor.js')
 const annotations = require('./annotations')
 const tal = require('./tal')
@@ -35,6 +35,7 @@ exports.RecordsStream = RecordsStream
 // utility functions
 exports.utils = utils
 exports.utils.ParseEdfPlusHeader = ParseEdfPlusHeader
+exports.utils.ParseFromEdfHeader = ParseFromEdfHeader
 exports.RecordProcessor = RecordProcessor
 
 // all annotations related code

@@ -16,6 +16,8 @@ const MONTHS = [
   'JAN', 'FEB', 'MAR', 'APR', 'MAY', 'JUN',
   'JUL', 'AUG', 'SEP', 'OCT', 'NOV', 'DEC'
 ]
+const EDF_CONTINUOUS = 'EDF+C'
+const EDF_DISCRETE = 'EDF+D'
 
 const InvalidHeaderLength = new Error('Edf header encoded can no be less than 256')
 const InvalidHeaderEncoding = new Error('Only printable US-ASCII characters can be use in header')
@@ -23,14 +25,29 @@ const MissingPatientSubfields = new Error('Missing patient identification subfie
 const MissingRecordSubfields = new Error('Missing record identification subfields')
 const InvalidSufieldDate = new Error('Invalid Subfield date')
 const InvalidStart = new Error('Invalid start date/time field')
+const InvalidReservedField = new Error(`Invalid Reserved field must start with: ${EDF_CONTINUOUS} or ${EDF_DISCRETE}`)
 
-function ParseEdfPlusHeader (buffer, header, subFieldEnc) {
+function ParseFromEdfHeader (header, subFieldEnc = SUBFIELD_SPACE_ENC) {
+  header.PatientId = parse_patient_subfields(
+    header.Patient, subFieldEnc
+  )
+
+  header.Recording = parse_recording_subfields(
+    header.Id, subFieldEnc
+  )
+
+  const reserved = header.Reserved
+  if (
+    !reserved.startsWith(EDF_CONTINUOUS) &&
+    !reserved.startsWith(EDF_DISCRETE)
+  ) {
+    throw InvalidReservedField
+  }
+}
+
+function ParseEdfPlusHeader (buffer, header, subFieldEnc = SUBFIELD_SPACE_ENC) {
   if (buffer.length < HEADER_LENGTH) {
     throw InvalidHeaderLength
-  }
-
-  if (!subFieldEnc) {
-    subFieldEnc = SUBFIELD_SPACE_ENC
   }
 
   for (let i = 0; i < HEADER_LENGTH; i++) {
@@ -44,13 +61,13 @@ function ParseEdfPlusHeader (buffer, header, subFieldEnc) {
     buffer.toString(ENCODING, 0, 8).trimRight()
   )
 
-  var patient = buffer.toString(ENCODING, 8, 88).trimRight()
+  const patient = buffer.toString(ENCODING, 8, 88).trimRight()
   header.PatientId = parse_patient_subfields(
     patient, subFieldEnc
   )
   header.Patient = patient
 
-  var recording = buffer.toString(ENCODING, 88, 168).trimRight()
+  const recording = buffer.toString(ENCODING, 88, 168).trimRight()
   header.Recording = parse_recording_subfields(
     recording, subFieldEnc
   )
@@ -62,6 +79,9 @@ function ParseEdfPlusHeader (buffer, header, subFieldEnc) {
         buffer.toString(ENCODING, 176, 184).trimRight()
     )
 
+
+  //this possible false here is what voids using already
+  //implemented logic ond edf-parser.utils.ParseEdfHeader
   if (header.Start === false) {
     header.Start = header.Id.Startdate
   }
@@ -70,7 +90,16 @@ function ParseEdfPlusHeader (buffer, header, subFieldEnc) {
     buffer.toString(ENCODING, 184, 192).trimRight()
   )
 
-  header.Reserved = buffer.toString(ENCODING, 192, 236).trimRight()
+  const reserved = buffer.toString(ENCODING, 192, 236).trimRight()
+  if (
+    !reserved.startsWith(EDF_CONTINUOUS) &&
+    !reserved.startsWith(EDF_DISCRETE)
+  ) {
+    throw InvalidReservedField
+  }
+
+  header.Reserved = reserved
+
   header.DataRecords = parseInt(
     buffer.toString(ENCODING, 236, 244).trimRight()
   )
@@ -91,6 +120,7 @@ function parse_edfplusstart (sdate, stime) {
     throw InvalidStart
   }
 
+  //After 2084, yy must be 'yy'
   if (YEAR_EXTRA === date_parts[2]) {
     return false
   }
@@ -115,7 +145,7 @@ function parse_patient_subfields (raw, spaceEnc) {
   }
 
   var birthdate = subfields[2]
-  if(null !== birthdate){
+  if (birthdate !== null) {
     birthdate = subfield_date(subfields[2])
   }
 
@@ -144,7 +174,7 @@ function parse_recording_subfields (raw, spaceEnc) {
   }
 
   var date = subfields[1]
-  if (null !== date){
+  if (date !== null) {
     date = subfield_date(date)
   }
 
@@ -164,7 +194,7 @@ function parse_recording_subfields (raw, spaceEnc) {
 
 function parse_subfield (raw, spaceEnc) {
   return raw.split(SUBFIELD_SEP).map(field => {
-    if (field == SUBFIELD_UNKNOWN) {
+    if (field === SUBFIELD_UNKNOWN) {
       return null
     }
 
@@ -203,5 +233,6 @@ function subfield_date (str) {
 }
 
 module.exports = {
-  ParseEdfPlusHeader
+  ParseEdfPlusHeader,
+  ParseFromEdfHeader
 }
