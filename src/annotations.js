@@ -7,6 +7,7 @@ const ANNOTATION_LABEL = 'EDF Annotations'
 const DEFAULT_DMAX = 32767
 const DEFAULT_DMIN = -32768
 
+/*Default Annotation Signal processor implementation*/
 var AnnotationProcessor = class {
   constructor (header) {
 
@@ -52,6 +53,7 @@ var AnnotationProcessor = class {
   }
 }
 
+/*Interface for Annotation signal processor*/
 function IsProcessor (obj) {
   return (
         obj.Process && (obj.Process instanceof Function) &&
