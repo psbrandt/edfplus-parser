@@ -23,8 +23,8 @@
     "edf-parser": "^0.2.3"
   },
   "devDependencies": {
-    "mocha": "^3.5.0",
-    "nyc": "^11.1.0"
+    "mocha": "^10.2.0",
+    "nyc": "^15.1.0"
   },
   "nyc": {
     "exclude": "tests"
